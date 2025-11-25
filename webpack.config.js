@@ -1,74 +1,82 @@
-const path = require("path");
-const webpack = require("webpack");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
+const CopyPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
+const TerserPlugin = require("terser-webpack-plugin");
+const webpack = require("webpack");
 
 module.exports = {
-    entry: {
-        main: "./src/main.ts"
-    },
-    optimization: {
-        splitChunks: {
-            cacheGroups: {
-                phaser: {
-                    test: /[\\/]node_modules[\\/]phaser[\\/]/,
-                    name: "phaser",
-                    chunks: "all",
-                },
-                phasereditor2d: {
-                    test: /[\\/]node_modules[\\/]@phasereditor2d[\\/]/,
-                    name: "phasereditor2d",
-                    chunks: "all",
-                }
-            }
-        }
-    },
+    mode: "development",
+    entry: "./src/main.ts",
     output: {
-        path: path.resolve(__dirname, "dist"),
-        filename: "[name]-[contenthash].bundle.js",
-        assetModuleFilename: "asset-packs/[name]-[hash][ext][query]",
+        path: path.resolve(process.cwd(), 'dist'),
+        filename: "./bundle.min.js"
+    },
+    resolve: {
+        extensions: [".ts", ".js", ".json"]
+    },
+    devtool: false,
+    performance: {
+        maxEntrypointSize: 2500000,
+        maxAssetSize: 1200000
     },
     module: {
         rules: [
             {
-                test: /\.tsx?$/,
-                use: "ts-loader",
+                test: /\.js$/,
                 exclude: /node_modules/,
+                use: {
+                    loader: "babel-loader"
+                }
             },
             {
-                test: /\.json/,
-                type: "asset/resource",
+                test: /\.tsx?$/,
                 exclude: /node_modules/,
+                loader: "ts-loader"
+
+            },
+            {
+                test: [/\.vert$/, /\.frag$/],
+                use: "raw-loader"
+            },
+            {
+                test: /\.(gif|png|jpe?g|svg|xml|glsl)$/i,
+                use: "file-loader"
             }
-        ],
+        ]
     },
-    resolve: {
-        extensions: [".tsx", ".ts", ".js"],
-    },
-    devServer: {
-        historyApiFallback: true,
-        allowedHosts: 'all',
-        static: {
-            directory: path.resolve(__dirname, "./dist"),
-        },
-        open: true,
-        hot: true,
-        port: 8080,
+    optimization: {
+        minimizer: [
+            new TerserPlugin({
+                terserOptions: {
+                    output: {
+                        comments: false
+                    }
+                }
+            })
+        ]
     },
     plugins: [
-        new HtmlWebpackPlugin({
-            template: path.join(__dirname, "index.html"),
-            minify: false
-        }),
         new CleanWebpackPlugin(),
+        new webpack.DefinePlugin({
+            "typeof CANVAS_RENDERER": JSON.stringify(true),
+            "typeof WEBGL_RENDERER": JSON.stringify(true),
+            "typeof WEBGL_DEBUG": JSON.stringify(false),
+            "typeof EXPERIMENTAL": JSON.stringify(false),
+            "typeof PLUGIN_3D": JSON.stringify(false),
+            "typeof PLUGIN_CAMERA3D": JSON.stringify(false),
+            "typeof PLUGIN_FBINSTANT": JSON.stringify(false),
+            "typeof FEATURE_SOUND": JSON.stringify(true)
+        }),
+        new HtmlWebpackPlugin({
+            template: "./index.html"
+        }),
         new CopyPlugin({
             patterns: [
                 { from: 'public/assets', to: 'assets' },
                 { from: 'public/favicon.png', to: 'favicon.png' },
                 { from: 'public/style.css', to: 'style.css' }
-            ]
+            ],
         }),
-        new webpack.HotModuleReplacementPlugin(),
     ]
 };
