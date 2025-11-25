@@ -6,7 +6,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
     entry: {
-        main: "./src/index.ts"
+        main: "./src/main.ts"
     },
     optimization: {
         splitChunks: {
@@ -58,19 +58,15 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: path.join(__dirname, "src/index.html"),
+            template: path.join(__dirname, "index.html"),
             minify: false
         }),
         new CleanWebpackPlugin(),
         new CopyPlugin({
             patterns: [
-                {
-                    from: "static",
-                    globOptions: {
-                        // asset pack files are imported in code as modules
-                        ignore: ["**/publicroot", "**/*-pack.json"]
-                    }
-                }
+                { from: 'public/assets', to: 'assets' },
+                { from: 'public/favicon.png', to: 'favicon.png' },
+                { from: 'public/style.css', to: 'style.css' }
             ]
         }),
         new webpack.HotModuleReplacementPlugin(),
