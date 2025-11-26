@@ -3,36 +3,41 @@ import { Scene } from 'phaser'
 export class Game extends Scene {
   camera!: Phaser.Cameras.Scene2D.Camera
   background!: Phaser.GameObjects.Image
-  msg_text!: Phaser.GameObjects.Text
 
   constructor() {
     super('Game')
   }
 
+  preload() {
+    this.load.image('Autumn_Forest_Objects', 'assets/Autumn_Forest_Objects.png')
+    this.load.image('Autumn_Forest_Tiles', 'assets/Autumn_Forest_Tiles.png')
+    this.load.tilemapTiledJSON('tilemap', 'assets/test-tilemap.json')
+  }
+
   create() {
     this.camera = this.cameras.main
-    this.camera.setBackgroundColor(0x00ff00)
+    this.camera.setBackgroundColor(0x000000)
 
-    this.background = this.add.image(512, 384, 'background')
-    this.background.setAlpha(0.5)
-
-    this.msg_text = this.add.text(
-      512,
-      384,
-      'Make something fun!\nand share it with us:\nsupport@phaser.io',
-      {
-        fontFamily: 'Arial Black',
-        fontSize: 38,
-        color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 8,
-        align: 'center',
-      },
+    const map = this.make.tilemap({ key: 'tilemap' })
+    const tileset = map.addTilesetImage(
+      'Autumn_Forest_Tiles',
+      'Autumn_Forest_Tiles',
     )
-    this.msg_text.setOrigin(0.5)
+    const objectsTileset = map.addTilesetImage(
+      'Autumn_Forest_Objects',
+      'Autumn_Forest_Objects',
+    )
 
-    this.input.once('pointerdown', () => {
-      this.scene.start('GameOver')
-    })
+    if (!tileset || !objectsTileset) {
+      throw new Error('Failed to load tilesets')
+    }
+
+    // TODO: Idk why these aren't aligned, this 250 thing is hack
+    map.createLayer('Ground', tileset, 250, 250)
+    map.createLayer('Props', objectsTileset, 0, 0)
+
+    // this.input.once('pointerdown', () => {
+    //   this.scene.start('GameOver')
+    // })
   }
 }
