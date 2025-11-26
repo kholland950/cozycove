@@ -1,106 +1,117 @@
-# Webpack + TypeScript project template for Phaser Editor v4
+# Phaser Webpack TypeScript Template
 
-A project template for Phaser 3, Webpack 5, TypeScript, and Phaser Editor v4.
-It also includes a workflow for deploying the game to GitHub Pages.
+This is a Phaser 3 project template that uses webpack for bundling. It supports hot-reloading for quick development workflow, includes TypeScript support and scripts to generate production-ready builds.
 
-## First steps
+**[This Template is also available as a JavaScript version.](https://github.com/phaserjs/template-webpack)**
 
-This project requires [Node.js](https://nodejs.org) and [NPM.js](https://www.npmjs.com). It is recommended that you learn the basics of [Webpack.js](https://webpack.js.org).
+### Versions
 
-* Install dependencies:
+This template has been updated for:
 
-    ```
-    npm install
-    npm update
-    ```
+- [Phaser 3.90.0](https://github.com/phaserjs/phaser)
+- [Webpack 5.99.6](https://github.com/webpack/webpack)
+- [TypeScript 5.4.5](https://github.com/microsoft/TypeScript)
 
-* Run the development server:
+![screenshot](screenshot.png)
 
-    ```
-    npm start
-    ```
+## Requirements
 
-    Open the browser at `http://127.0.0.1:8080`.
+[Node.js](https://nodejs.org) is required to install dependencies and run scripts via `npm`.
 
-* Make a production build:
+## Available Commands
 
-    ```
-    npm run build
-    ```
+| Command         | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `npm install`   | Install project dependencies                   |
+| `npm run dev`   | Launch a development web server                |
+| `npm run build` | Create a production build in the `dist` folder |
 
-    It is generated in the `/dist` folder.
+## Writing Code
 
-## Hosting your game on GitHub Pages
+After cloning the repo, run `npm install` from your project directory. Then, you can start the local development server by running `npm run dev`.
 
-If you are looking for a hosting for you game, GitHub Pages is a very nice and free option.
-This repository includes a workflow for publishing the game into GitHub Pages automatically.
+The local development server runs on `http://localhost:8080` by default. Please see the webpack documentation if you wish to change this, or add SSL support.
 
-Just follow these steps:
+Once the server is running you can edit any of the files in the `src` folder. Webpack will automatically recompile your code and then reload the browser.
 
-* Create a GitHub repository with the project (something that probably you already did).
-* In GitHub, open the repository and go to **Settings** > **GitHub Pages**.
-* In the **Build and deployment** section, set the **GitHub Actions** option in the **Source** parameter.
-* Run the **Build game with webpack** workflow in the **Actions** section on the repository.
-* When the workflow completes, return to the **Settings** > **GitHub Pages** section and check the address for the deployed game. It should show a message like **Your site is live at https://\<USERNAME>.github.io/<REPOSITORY_NAME>/**.
-* Next time you push changes to the `main` branch it will run the workflow and deploy the game automatically.
+## Template Project Structure
 
-If you don't want to deploy your game to GitHub Pages, then you can remove the `.github/workflows/main.yml` file.
+We have provided a default project structure to get you started. This is as follows:
 
-In this video I explain many of these concepts: [Start making a game in the cloud. GitHub + VS Code + Phaser Editor [Tutorial]](https://www.youtube.com/watch?v=lndU7UAjzgo&t=183s)
+| Path                | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| `public/index.html` | A basic HTML page to contain the game.                |
+| `public/assets`     | Game sprites, audio, etc. Served directly at runtime. |
+| `public/style.css`  | Global layout styles.                                 |
+| `src/main.ts`       | Application bootstrap.                                |
+| `src/game`          | Folder containing the game code.                      |
+| `src/game/main.ts`  | Game entry point: configures and starts the game.     |
+| `src/game/scenes`   | Folder with all Phaser game scenes.                   |
 
-## Phaser Editor considerations
+## Handling Assets
 
-### Excluding files from the project
+Webpack supports loading assets via JavaScript module `import` statements.
 
-There are a lot of files present in the project that are not relevant to Phaser Editor. For example, the whole `node_modules` folder should be excluded from the editor's project.
+This template provides support for both embedding assets and also loading them from a static folder. To embed an asset, you can import it at the top of the JavaScript file you are using it in:
 
-The `/.skip` file lists the folders and files to exclude from the editor's project. 
+```js
+import logoImg from "./assets/logo.png";
+```
 
-[Learn more about resource filtering in Phaser Editor](https://phaser.io/editor/docs/misc/resources-filtering)
+To load static files such as audio files, videos, etc place them into the `public/assets` folder. Then you can use this path in the Loader calls within Phaser:
 
-### Setting the root folder for the game's assets
+```js
+preload();
+{
+  //  This is an example of an imported bundled image.
+  //  Remember to import it at the top of this file
+  this.load.image("logo", logoImg);
 
-The `/static` folder contains the assets (images, audio, atlases) used by the game. Webpack copies it to the distribution folder and makes it available as a root path. For example, `http://127.0.0.1:8080/assets` points to the `/static/assets` folder.
+  //  This is an example of loading a static image
+  //  from the public/assets folder:
+  this.load.image("background", "assets/bg.png");
+}
+```
 
-By default, Phaser Editor uses the project's root as the start path for the assets. You can change it by creating an empty `publicroot` file. That is the case of the `/static/publicroot` file, which allows adding files to the Asset Pack file (`/static/assets/asset-pack.json`) using correct URLs.
+When you issue the `npm run build` command, all static assets are automatically copied to the `dist/assets` folder.
 
-### Asset Pack content hash
+## Deploying to Production
 
-Webpack is configured to include the content hash of a file defined in an asset pack editor:
+After you run the `npm run build` command, your code will be built into a single bundle and saved to the `dist` folder, along with any other assets your project imported, or stored in the public assets folder.
 
-* For loading a pack file in code, import it as a resource:
-    ```javascript
-    import assetPackUrl from "../static/assets/asset-pack.json";
-    ...
-    this.load.pack("pack1", assetPackUrl);
-    ```
-    Webpack will add the `asset-pack.json` file into the distribution files, in the folder `dist/asset-packs/`.
+In order to deploy your game, you will need to upload _all_ of the contents of the `dist` folder to a public facing web server.
 
-* Because Webpack automatically imports the pack files, those are excluded in the **CopyPlugin** configuration. By convention, name the pack files like this `[any name]-pack.json`.
+## Customizing the Template
 
-* The NPM `build` script calls the `phaser-asset-pack-hashing` tool. It parses all pack files in the `dist/` folder and transform the internal URL, adding the content-hash to the query string. It also parses files referenced by the pack. For example, a multi-atlas file is parsed and the name of the image's file will be changed to use a content-hash.
+### Babel
 
-Learn more about the [phaser-asset-pack-hashing](https://www.npmjs.com/package/phaser-asset-pack-hashing) tool.
+You can write modern ES6+ JavaScript and Babel will transpile it to a version of JavaScript that you want your project to support. The targeted browsers are set in the `.babelrc` file and the default currently targets all browsers with total usage over "0.25%" but excludes IE11 and Opera Mini.
 
-### Coding
+```
+"browsers": [
+ ">0.25%",
+ "not ie 11",
+ "not op_mini all"
+]
+```
 
-The `/src` folder contains all the TypeScript code, including the scene and user component files, in addition to the Phaser Editor compiler output.
+### Webpack
 
-To edit the code, you can use any editor, but we recommend using Visual Studio Code. This project has the Visual Studio Code configuration files.
+If you want to customize your build, such as adding a new webpack loader or plugin (i.e. for loading CSS or fonts), you can modify the `webpack/config.*.js` file for cross-project changes, or you can modify and/or create new configuration files and target them in specific npm tasks inside of `package.json`. Please see the [Webpack documentation](https://webpack.js.org/) for more information.
 
-### Scene, User Components, and ScriptNode configuration
+## Join the Phaser Community!
 
-The Scenes, User Components, and ScriptNodes are configured to compile to TypeScript ES modules. Also, the compilers auto-import the classes used in the generated code.
+We love to see what developers like you create with Phaser! It really motivates us to keep improving. So please join our community and show-off your work 😄
 
-### ScriptNodes
+**Visit:** The [Phaser website](https://phaser.io) and follow on [Phaser Twitter](https://twitter.com/phaser_)<br />
+**Play:** Some of the amazing games [#madewithphaser](https://twitter.com/search?q=%23madewithphaser&src=typed_query&f=live)<br />
+**Learn:** [API Docs](https://newdocs.phaser.io), [Support Forum](https://phaser.discourse.group/) and [StackOverflow](https://stackoverflow.com/questions/tagged/phaser-framework)<br />
+**Discord:** Join us on [Discord](https://discord.gg/phaser)<br />
+**Code:** 2000+ [Examples](https://labs.phaser.io)<br />
+**Read:** The [Phaser World](https://phaser.io/community/newsletter) Newsletter<br />
 
-The project requires the following script libraries:
+Created by [Phaser Studio](mailto:support@phaser.io). Powered by coffee, anime, pixels and love.
 
-* [@phaserjs/editor-scripts-core](https://www.npmjs.com/package/@phaserjs/editor-scripts-core)
-* [@phaserjs/editor-scripts-simple-animations](https://www.npmjs.com/package/@phaserjs/editor-scripts-simple-animations)
+The Phaser logo and characters are &copy; 2011 - 2025 Phaser Studio Inc.
 
-You can add your script nodes to the `src/script-nodes` folder.
-
-## About
-
-This project template was created by the Phaser Studio team.
+All rights reserved.
