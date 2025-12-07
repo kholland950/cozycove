@@ -38,6 +38,7 @@
     "webpack-merge": "^6.0.1"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "phaser": "^3.90.0",
+    "simplex-noise": "^4.0.3"
   }
 }
