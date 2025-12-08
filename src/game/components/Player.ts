@@ -1,17 +1,30 @@
 import type { Game } from '../scenes/Game'
 
+const directions = [
+  'west',
+  'south-west',
+  'south',
+  'south-east',
+  'east',
+  'north-east',
+  'north',
+  'north-west',
+]
+
 export class Player {
   player!: Phaser.GameObjects.Sprite
   keys!: { [key: string]: Phaser.Input.Keyboard.Key }
+  facing: string = 'south'
+  speed: { x: number; y: number } = { x: 0, y: 0 }
 
   constructor(public scene: Game) {
     this.scene = scene
   }
 
   preload() {
-    this.scene.load.spritesheet('player', 'assets/Character_Walk.png', {
-      frameWidth: 40,
-      frameHeight: 48,
+    this.scene.load.spritesheet('player', 'assets/deer_spritesheet.png', {
+      frameWidth: 64,
+      frameHeight: 64,
     })
   }
 
@@ -19,46 +32,35 @@ export class Player {
     // Create player sprite at the center of the map
     this.player = this.scene.add.sprite(x, y, 'player')
 
-    // Create walking animations
-    this.scene.anims.create({
-      key: 'walk-left',
-      frames: this.scene.anims.generateFrameNumbers('player', {
-        start: 0,
-        end: 3,
-      }),
-      frameRate: 10,
-      repeat: -1,
-    })
+    const row = (rowNumber: number) => (rowNumber - 1) * 61
 
-    this.scene.anims.create({
-      key: 'walk-right',
-      frames: this.scene.anims.generateFrameNumbers('player', {
-        start: 4,
-        end: 7,
-      }),
-      frameRate: 10,
-      repeat: -1,
-    })
+    const runAnimLength = 6
+    for (let i = 0; i < directions.length; i++) {
+      const direction = directions[i]
+      this.scene.anims.create({
+        key: `run-${direction}`,
+        frames: this.scene.anims.generateFrameNumbers('player', {
+          start: row(i + 1),
+          end: row(i + 1) + runAnimLength - 1,
+        }),
+        frameRate: 16,
+        repeat: -1,
+      })
+    }
 
-    this.scene.anims.create({
-      key: 'walk-up',
-      frames: this.scene.anims.generateFrameNumbers('player', {
-        start: 8,
-        end: 11,
-      }),
-      frameRate: 10,
-      repeat: -1,
-    })
-
-    this.scene.anims.create({
-      key: 'walk-down',
-      frames: this.scene.anims.generateFrameNumbers('player', {
-        start: 12,
-        end: 15,
-      }),
-      frameRate: 10,
-      repeat: -1,
-    })
+    const idleAnimLength = 22
+    for (let i = 0; i < directions.length; i++) {
+      const direction = directions[i]
+      this.scene.anims.create({
+        key: `idle-${direction}`,
+        frames: this.scene.anims.generateFrameNumbers('player', {
+          start: row(i + 1 + directions.length * 3),
+          end: row(i + 1 + directions.length * 3) + idleAnimLength - 1,
+        }),
+        frameRate: 16,
+        repeat: -1,
+      })
+    }
 
     // Make camera follow the player
     this.scene.camera.startFollow(this.player, true, 0.1, 0.1)
@@ -76,24 +78,41 @@ export class Player {
 
     const speed = 3
 
-    // Horizontal movement
-    if (this.keys.a.isDown) {
-      this.player.x -= speed
-      this.player.anims.play('walk-left', true)
+    if (this.keys.a.isDown && this.keys.s.isDown) {
+      this.speed = { x: -speed * Math.SQRT1_2, y: speed * Math.SQRT1_2 }
+      this.facing = 'south-west'
+    } else if (this.keys.a.isDown && this.keys.w.isDown) {
+      this.speed = { x: -speed * Math.SQRT1_2, y: -speed * Math.SQRT1_2 }
+      this.facing = 'north-west'
+    } else if (this.keys.d.isDown && this.keys.s.isDown) {
+      this.speed = { x: speed * Math.SQRT1_2, y: speed * Math.SQRT1_2 }
+      this.facing = 'south-east'
+    } else if (this.keys.d.isDown && this.keys.w.isDown) {
+      this.speed = { x: speed * Math.SQRT1_2, y: -speed * Math.SQRT1_2 }
+      this.facing = 'north-east'
+    } else if (this.keys.a.isDown) {
+      this.speed = { x: -speed, y: 0 }
+      this.facing = 'west'
     } else if (this.keys.d.isDown) {
-      this.player.x += speed
-      this.player.anims.play('walk-right', true)
-    }
-    // Vertical movement
-    else if (this.keys.w.isDown) {
-      this.player.y -= speed
-      this.player.anims.play('walk-up', true)
+      this.speed = { x: speed, y: 0 }
+      this.facing = 'east'
     } else if (this.keys.s.isDown) {
-      this.player.y += speed
-      this.player.anims.play('walk-down', true)
+      this.speed = { x: 0, y: speed }
+      this.facing = 'south'
+    } else if (this.keys.w.isDown) {
+      this.speed = { x: 0, y: -speed }
+      this.facing = 'north'
     } else {
-      // Stop animation when not moving
-      this.player.anims.stop()
+      this.speed = { x: 0, y: 0 }
+    }
+
+    this.player.x += this.speed.x
+    this.player.y += this.speed.y
+
+    if (this.speed.x !== 0 || this.speed.y !== 0) {
+      this.player.anims.play(`run-${this.facing}`, true)
+    } else {
+      this.player.anims.play(`idle-${this.facing}`, true)
     }
   }
 }
