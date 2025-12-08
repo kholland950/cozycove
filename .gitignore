@@ -15,3 +15,9 @@ dist/
 /npm-debug.log
 
 *.tiled-session
+
+# Blender temporary files
+*.blend1
+*.blend2
+*.autosave
+*.tmp
