@@ -1,24 +1,28 @@
-import { SimplexNoise } from './utils/SimplexNoise.js'
-import { GeneratePaths } from './GeneratePaths.js'
+import { SimplexNoise } from './utils/SimplexNoise'
+import { GeneratePaths } from './GeneratePaths'
 // import type { Point } from '../../types/global.js'
-import type { EdgeNode } from './types/common.js'
-import type { PathNode } from './types/common.js'
+import type { EdgeNode } from '../types/common'
+import type { PathNode } from '../types/common'
 export class GenerateRegion {
 	private noiseGenerator: SimplexNoise
 	private pathGenerator: GeneratePaths
 	private width: number
 	private height: number
+	private scale: number
 	private edgeNodes: EdgeNode[] = []
 	private pathNodes: PathNode[] = []
 
 	constructor(width: number, height: number, scale: number = 0.01) {
 		this.width = width
 		this.height = height
-		this.noiseGenerator = new SimplexNoise(scale)
-		this.pathGenerator = new GeneratePaths(width, height, 2, scale)
+		this.scale = scale
+		// Don't initialize pathGenerator here - wait for seed in initialize()
 	}
 	initialize(seed: number) {
-		this.generateEdgeNodes(seed)
+		this.noiseGenerator = new SimplexNoise(this.scale, seed)
+		// Create seeded path generator
+		this.pathGenerator = new GeneratePaths(this.width, this.height, 1, seed)
+		this.generateEdgeNodes()
 		this.generatePaths()
 		this.generateHeightMap()
 		//this.generateBiome()
@@ -26,34 +30,49 @@ export class GenerateRegion {
 	getPathNodes(): PathNode[] {
 		return this.pathNodes
 	}
-	generateEdgeNodes(seed: number) {
+	generateEdgeNodes() {
 		let edgeNode: EdgeNode
 
+		// West edge - left side, random y
 		edgeNode = {
 			x: 0,
-			y: this.noiseGenerator.getNoise(0, this.height),
+			y: Math.floor(
+				(this.noiseGenerator.getNoise(0, 0) + 1) * 0.5 * this.height,
+			),
 			facing: 'West',
 		}
 		this.edgeNodes.push(edgeNode)
+		// East edge - right side, random y
 		edgeNode = {
 			x: this.width - 1,
-			y:
-				this.noiseGenerator.getNoise(this.width - 1, this.height) * this.height,
+			y: Math.floor(
+				(this.noiseGenerator.getNoise(this.width, 0) + 1) * 0.5 * this.height,
+			),
 			facing: 'East',
 		}
 		this.edgeNodes.push(edgeNode)
+		// North edge - top side, random x
 		edgeNode = {
-			x: this.noiseGenerator.getNoise(this.width, 0) * this.width,
+			x: Math.floor(
+				(this.noiseGenerator.getNoise(0, this.height) + 1) * 0.5 * this.width,
+			),
 			y: 0,
 			facing: 'North',
 		}
 		this.edgeNodes.push(edgeNode)
+		// South edge - bottom side, random x
 		edgeNode = {
-			x: this.noiseGenerator.getNoise(this.width, this.height - 1) * this.width,
+			x: Math.floor(
+				(this.noiseGenerator.getNoise(this.width, this.height) + 1) *
+					0.5 *
+					this.width,
+			),
 			y: this.height - 1,
 			facing: 'South',
 		}
 		this.edgeNodes.push(edgeNode)
+
+		console.log('Generated edge nodes:', this.edgeNodes)
 	}
 
 	generatePaths() {
@@ -64,6 +83,8 @@ export class GenerateRegion {
 			{ x: startNode.x, y: startNode.y },
 			{ x: endNode.x, y: endNode.y },
 		)
+
+		console.log('Generated path nodes:', this.pathNodes)
 	}
 
 	generateHeightMap(): number[][] {

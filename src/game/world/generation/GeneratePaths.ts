@@ -1,6 +1,6 @@
 import { SimplexNoise } from './utils/SimplexNoise'
 import type { Point } from '../../types/global'
-import type { PathNode } from './types/common.js'
+import type { PathNode } from '../types/common'
 
 export class GeneratePaths {
 	private noiseGenerator: SimplexNoise
@@ -13,35 +13,65 @@ export class GeneratePaths {
 		height: number,
 		scale: number = 0.05,
 		noiseInfluence: number = 5,
+		seed?: number | string,
 	) {
 		this.width = width
 		this.height = height
 		this.noiseInfluence = noiseInfluence
-		this.noiseGenerator = new SimplexNoise(scale)
+		this.noiseGenerator = new SimplexNoise(scale, seed)
 	}
 
 	/**
-	 * Generates a winding path from start to end using A* with noise influence
+	 * Generates a winding path from start to end using A* with noise influence.
+	 * ALWAYS returns a valid path - guaranteed to reach the destination.
 	 * @param start Starting point
 	 * @param end Ending point
-	 * @returns Array of points representing the path
+	 * @returns Array of PathNodes representing the path (never empty)
 	 */
 	generatePath(start: Point, end: Point): PathNode[] {
+		// Clamp and round coordinates to valid bounds
+		const sx = Math.max(0, Math.min(this.width - 1, Math.round(start.x)))
+		const sy = Math.max(0, Math.min(this.height - 1, Math.round(start.y)))
+		const ex = Math.max(0, Math.min(this.width - 1, Math.round(end.x)))
+		const ey = Math.max(0, Math.min(this.height - 1, Math.round(end.y)))
+
+		// If start equals end, return single node
+		if (sx === ex && sy === ey) {
+			return [
+				{
+					x: sx,
+					y: sy,
+					g: 0,
+					h: 0,
+					f: 0,
+					parent: null,
+				},
+			]
+		}
+
 		const openSet: PathNode[] = []
 		const closedSet = new Set<string>()
+		const nodeMap = new Map<string, PathNode>()
 
 		const startNode: PathNode = {
-			x: start.x,
-			y: start.y,
+			x: sx,
+			y: sy,
 			g: 0,
-			h: this.heuristic(start, end),
+			h: this.heuristic({ x: sx, y: sy }, { x: ex, y: ey }),
 			f: 0,
 			parent: null,
 		}
 		startNode.f = startNode.g + startNode.h
 		openSet.push(startNode)
+		nodeMap.set(`${sx},${sy}`, startNode)
 
-		while (openSet.length > 0) {
+		// Iteration limit to prevent infinite loops
+		const maxIterations = this.width * this.height
+		let iterations = 0
+
+		while (openSet.length > 0 && iterations < maxIterations) {
+			iterations++
+
 			// Get node with lowest f score
 			let currentIndex = 0
 			for (let i = 1; i < openSet.length; i++) {
@@ -52,7 +82,7 @@ export class GeneratePaths {
 			const current = openSet[currentIndex]
 
 			// Check if we reached the end
-			if (current.x === end.x && current.y === end.y) {
+			if (current.x === ex && current.y === ey) {
 				return this.reconstructPath(current)
 			}
 
@@ -71,9 +101,7 @@ export class GeneratePaths {
 				const tentativeG = current.g + moveCost
 
 				// Check if neighbor is already in open set
-				const existingNode = openSet.find(
-					(n) => n.x === neighbor.x && n.y === neighbor.y,
-				)
+				const existingNode = nodeMap.get(key)
 
 				if (!existingNode) {
 					// Add new node
@@ -81,12 +109,13 @@ export class GeneratePaths {
 						x: neighbor.x,
 						y: neighbor.y,
 						g: tentativeG,
-						h: this.heuristic(neighbor, end),
+						h: this.heuristic(neighbor, { x: ex, y: ey }),
 						f: 0,
 						parent: current,
 					}
 					newNode.f = newNode.g + newNode.h
 					openSet.push(newNode)
+					nodeMap.set(key, newNode)
 				} else if (tentativeG < existingNode.g) {
 					// Update existing node with better path
 					existingNode.g = tentativeG
@@ -96,8 +125,55 @@ export class GeneratePaths {
 			}
 		}
 
-		// No path found
-		return []
+		// Fallback: A* didn't complete (shouldn't happen on open grid)
+		// Return straight line path as guaranteed fallback
+		return this.createStraightPath({ x: sx, y: sy }, { x: ex, y: ey })
+	}
+
+	/**
+	 * Creates a straight-line path from start to end using Bresenham's line algorithm.
+	 * Guaranteed to return a valid path.
+	 */
+	private createStraightPath(start: Point, end: Point): PathNode[] {
+		const path: PathNode[] = []
+		let parent: PathNode | null = null
+
+		const dx = Math.abs(end.x - start.x)
+		const dy = Math.abs(end.y - start.y)
+		const sx = start.x < end.x ? 1 : -1
+		const sy = start.y < end.y ? 1 : -1
+		let err = dx - dy
+
+		let x = start.x
+		let y = start.y
+
+		while (true) {
+			const node: PathNode = {
+				x,
+				y,
+				g: parent ? parent.g + this.getMoveCost(x, y) : 0,
+				h: this.heuristic({ x, y }, end),
+				f: 0,
+				parent,
+			}
+			node.f = node.g + node.h
+			path.push(node)
+			parent = node
+
+			if (x === end.x && y === end.y) break
+
+			const e2 = 2 * err
+			if (e2 > -dy) {
+				err -= dy
+				x += sx
+			}
+			if (e2 < dx) {
+				err += dx
+				y += sy
+			}
+		}
+
+		return path
 	}
 
 	/**
@@ -168,26 +244,25 @@ export class GeneratePaths {
 	/**
 	 * Generates multiple paths between random points
 	 */
-	generateMultiplePaths(pathCount: number): Point[][] {
-		const paths: Point[][] = []
+	// generateMultiplePaths(pathCount: number): Point[][] {
+	// 	const paths: Point[][] = []
 
-		for (let i = 0; i < pathCount; i++) {
-			// Generate random start and end points
-			const start: Point = {
-				x: Math.floor(Math.random() * this.width),
-				y: Math.floor(Math.random() * this.height),
-			}
-			const end: Point = {
-				x: Math.floor(Math.random() * this.width),
-				y: Math.floor(Math.random() * this.height),
-			}
+	// 	for (let i = 0; i < pathCount; i++) {
+	// 		// Generate random start and end points
+	// 		const start: Point = {
+	// 			x: Math.floor(Math.random() * this.width),
+	// 			y: Math.floor(Math.random() * this.height),
+	// 		}
+	// 		const end: Point = {
+	// 			x: Math.floor(Math.random() * this.width),
+	// 			y: Math.floor(Math.random() * this.height),
+	// 		}
 
-			const path = this.generatePath(start, end)
-			if (path.length > 0) {
-				paths.push(path)
-			}
-		}
+	// 		const path = this.generatePath(start, end)
+	// 		// Path is always non-empty now
+	// 		paths.push(path.map((n) => ({ x: n.x, y: n.y })))
+	// 	}
 
-		return paths
-	}
+	// 	return paths
+	// }
 }

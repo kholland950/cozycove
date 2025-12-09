@@ -1,5 +1,6 @@
 import { Scene } from 'phaser'
 import { Player } from '../components/Player'
+import { RegionManager } from '../world/region/RegionManager'
 
 export class Game extends Scene {
 	camera!: Phaser.Cameras.Scene2D.Camera
@@ -7,52 +8,39 @@ export class Game extends Scene {
 	player!: Phaser.GameObjects.Sprite
 	keys!: { [key: string]: Phaser.Input.Keyboard.Key }
 
+	regionManager: RegionManager = new RegionManager()
+
 	playerComponent: Player = new Player(this)
 
 	constructor() {
 		super('Game')
+		this.regionManager.generateRegionAt(0, 0)
 	}
 
 	preload() {
-		this.load.image('Autumn_Forest_Objects', 'assets/Autumn_Forest_Objects.png')
-		this.load.image('Autumn_Forest_Tiles', 'assets/Autumn_Forest_Tiles.png')
-		this.load.image('Buildings', 'assets/Buildings.png')
-		this.load.tilemapTiledJSON('tilemap', 'assets/test-tilemap.json')
-
 		this.playerComponent.preload()
 	}
 
 	create() {
 		this.camera = this.cameras.main
 		this.camera.setBackgroundColor(0x000000)
+		this.camera.setZoom(0.5)
+		// create region now (safe during scene lifecycle)
+		this.regionManager.generateRegionAt(0, 0, 12345)
 
-		const map = this.make.tilemap({
-			key: 'tilemap',
-		})
-		const tileset = map.addTilesetImage(
-			'Autumn_Forest_Tiles',
-			'Autumn_Forest_Tiles',
-		)
-		const objectsTileset = map.addTilesetImage(
-			'Autumn_Forest_Objects',
-			'Autumn_Forest_Objects',
-		)
-		const buildingsTileset = map.addTilesetImage('Atlas_Buildings', 'Buildings')
+		// instantiate player with the correct scene reference
+		this.playerComponent = new Player(this)
+		this.playerComponent.create(500, 500)
 
-		if (!tileset || !objectsTileset || !buildingsTileset) {
-			throw new Error('Failed to load tilesets')
+		const region = this.regionManager.getRegionAt(0, 0)
+		if (region) {
+			const regionTexture = this.regionManager.createRegionTexture(region, this)
+			const img = this.add.image(0, 0, regionTexture.key).setOrigin(0, 0)
+
+			img.setScale(16)
+			img.setDepth(-1)
 		}
-
-		map.createLayer('Ground', tileset, 0, 0)
-		map.createLayer('Props', objectsTileset, 0, 0)
-		map.createLayer('Buildings', buildingsTileset, 0, 0)
-
-		const mapWidth = map.widthInPixels
-		const mapHeight = map.heightInPixels
-		this.camera.setBounds(0, 0, mapWidth, mapHeight)
-
-		this.playerComponent.create(mapWidth / 2, mapHeight / 2)
-
+		this.camera.useBounds = false
 		// this.input.once('pointerdown', () => {
 		//   this.scene.start('GameOver')
 		// })
