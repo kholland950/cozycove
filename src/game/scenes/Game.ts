@@ -31,6 +31,7 @@ export class Game extends Scene {
 
 	preload() {
 		this.playerComponent.preload()
+		this.regionManager.generateRegionAt(0, 0)
 	}
 
 	create() {
@@ -38,16 +39,15 @@ export class Game extends Scene {
 		this.camera.setBackgroundColor(0x000000)
 		this.camera.setZoom(0.5)
 		// create region now (safe during scene lifecycle)
-		this.regionManager.generateRegionAt(0, 0)
 
 		// instantiate player with the correct scene reference
 		this.playerComponent = new Player(this)
-		this.playerComponent.create(500, 500)
+		this.playerComponent.create(0, 0)
 
 		const region = this.regionManager.getRegionAt(0, 0)
 		if (region) {
 			const regionTexture = this.regionManager.createRegionTexture(region, this)
-			const img = this.add.image(0, 0, regionTexture.key).setOrigin(0, 0)
+			const img = this.add.image(0, 0, regionTexture.key)
 
 			img.setScale(4)
 			img.setDepth(-1)
