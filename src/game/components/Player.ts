@@ -1,15 +1,27 @@
 import type { Game } from '../scenes/Game'
+import spritesheetJSON from '../sprite-configs/wizard_spritesheet.json'
 
-const directions = [
-	'west',
-	'south-west',
-	'south',
-	'south-east',
-	'east',
-	'north-east',
-	'north',
-	'north-west',
-]
+// const directions = [
+// 	'front',
+// 	'front-right',
+// 	'right',
+// 	'back-right',
+// 	'back',
+// 	'back-left',
+// 	'left',
+// 	'front-left',
+// ]
+
+const directionMap: { [key: string]: string } = {
+	west: 'left',
+	'south-west': 'front-left',
+	south: 'front',
+	'south-east': 'front-right',
+	east: 'right',
+	'north-east': 'back-right',
+	north: 'back',
+	'north-west': 'back-left',
+}
 
 export class Player {
 	player!: Phaser.GameObjects.Sprite
@@ -22,44 +34,44 @@ export class Player {
 	}
 
 	preload() {
-		this.scene.load.spritesheet('player', 'assets/deer_spritesheet.png', {
-			frameWidth: 64,
-			frameHeight: 64,
-		})
+		this.scene.load.spritesheet(
+			'player',
+			`assets/${spritesheetJSON.spritesheet}`,
+			{
+				frameWidth: spritesheetJSON.frame_width,
+				frameHeight: spritesheetJSON.frame_height,
+			},
+		)
 	}
 
 	create(x: number, y: number) {
 		// Create player sprite at the center of the map
 		this.player = this.scene.add.sprite(x, y, 'player')
 
-		const row = (rowNumber: number) => (rowNumber - 1) * 61
+		// Create animations from spritesheet JSON
+		for (const anim of spritesheetJSON.animations) {
+			for (
+				let dirIdx = 0;
+				dirIdx < spritesheetJSON.directions.length;
+				dirIdx++
+			) {
+				const direction = spritesheetJSON.directions[dirIdx]
+				const row = anim.start_row + dirIdx
+				const startFrame = row * spritesheetJSON.total_columns
+				const endFrame = startFrame + anim.num_frames - 1
 
-		const runAnimLength = 6
-		for (let i = 0; i < directions.length; i++) {
-			const direction = directions[i]
-			this.scene.anims.create({
-				key: `run-${direction}`,
-				frames: this.scene.anims.generateFrameNumbers('player', {
-					start: row(i + 1),
-					end: row(i + 1) + runAnimLength - 1,
-				}),
-				frameRate: 16,
-				repeat: -1,
-			})
-		}
+				const animKey = `${anim.name.toLowerCase()}-${direction}`
 
-		const idleAnimLength = 22
-		for (let i = 0; i < directions.length; i++) {
-			const direction = directions[i]
-			this.scene.anims.create({
-				key: `idle-${direction}`,
-				frames: this.scene.anims.generateFrameNumbers('player', {
-					start: row(i + 1 + directions.length * 3),
-					end: row(i + 1 + directions.length * 3) + idleAnimLength - 1,
-				}),
-				frameRate: 16,
-				repeat: -1,
-			})
+				this.scene.anims.create({
+					key: animKey,
+					frames: this.scene.anims.generateFrameNumbers('player', {
+						start: startFrame,
+						end: endFrame,
+					}),
+					frameRate: 10,
+					repeat: -1,
+				})
+			}
 		}
 
 		// Make camera follow the player
@@ -109,10 +121,12 @@ export class Player {
 		this.player.x += this.speed.x
 		this.player.y += this.speed.y
 
+		const spriteDirection = directionMap[this.facing]
+
 		if (this.speed.x !== 0 || this.speed.y !== 0) {
-			this.player.anims.play(`run-${this.facing}`, true)
+			this.player.anims.play(`run-${spriteDirection}`, true)
 		} else {
-			this.player.anims.play(`idle-${this.facing}`, true)
+			this.player.anims.play(`idle-${spriteDirection}`, true)
 		}
 	}
 }
