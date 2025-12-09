@@ -30,6 +30,7 @@ export class GeneratePaths {
 	 */
 	generatePath(start: Point, end: Point): PathNode[] {
 		// Clamp and round coordinates to valid bounds
+		console.log('Generating path from', start, 'to', end)
 		const sx = Math.max(0, Math.min(this.width - 1, Math.round(start.x)))
 		const sy = Math.max(0, Math.min(this.height - 1, Math.round(start.y)))
 		const ex = Math.max(0, Math.min(this.width - 1, Math.round(end.x)))

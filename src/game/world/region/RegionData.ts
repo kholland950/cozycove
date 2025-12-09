@@ -27,7 +27,7 @@ export class RegionData {
 
 	// Static structures placed in this region
 	public structures: StaticStructure[] = []
-	public paths: PathNode[] = []
+	public paths: PathNode[][] = []
 
 	// Additional metadata
 	public seed?: number | string

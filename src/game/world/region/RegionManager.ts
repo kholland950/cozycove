@@ -20,7 +20,7 @@ export class RegionManager {
 		this.height = height
 		this.chunkSize = chunkSize
 		this.scale = scale
-		this.seed = seed || Math.random()
+		this.seed = seed
 	}
 
 	generateRegionAt(worldX: number, worldY: number): RegionData {
@@ -38,7 +38,6 @@ export class RegionManager {
 			this.scale,
 			this.seed,
 		)
-		generator.initialize()
 		region.paths = generator.getPathNodes()
 		console.log('Region paths count:', region.paths.length)
 		this.regions.push(region)
@@ -96,30 +95,35 @@ export class RegionManager {
 		// }
 
 		// Draw path nodes as visible lines
-		const pathNodes = region.paths
+		const paths = region.paths
 
-		if (Array.isArray(pathNodes) && pathNodes.length > 0) {
-			console.log('Drawing path with', pathNodes.length, 'nodes')
+		if (Array.isArray(paths) && paths.length > 0) {
+			console.log('Drawing', paths.length, 'paths')
 			ctx.strokeStyle = '#8B4513'
 			ctx.lineWidth = 4
 			ctx.lineCap = 'round'
 			ctx.lineJoin = 'round'
 
-			ctx.beginPath()
-			for (let i = 0; i < pathNodes.length; i++) {
-				const node = pathNodes[i]
-				const x = Math.round(node.x)
-				const y = Math.round(node.y)
+			// Draw each path
+			for (const pathNodes of paths) {
+				if (!Array.isArray(pathNodes) || pathNodes.length === 0) continue
 
-				if (x >= 0 && x < width && y >= 0 && y < height) {
-					if (i === 0) {
-						ctx.moveTo(x, y)
-					} else {
-						ctx.lineTo(x, y)
+				ctx.beginPath()
+				for (let i = 0; i < pathNodes.length; i++) {
+					const node = pathNodes[i]
+					const x = Math.round(node.x)
+					const y = Math.round(node.y)
+
+					if (x >= 0 && x < width && y >= 0 && y < height) {
+						if (i === 0) {
+							ctx.moveTo(x, y)
+						} else {
+							ctx.lineTo(x, y)
+						}
 					}
 				}
+				ctx.stroke()
 			}
-			ctx.stroke()
 		} else {
 			console.warn('No path nodes to draw')
 		}

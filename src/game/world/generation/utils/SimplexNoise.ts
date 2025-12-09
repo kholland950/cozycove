@@ -1,4 +1,5 @@
 import { createNoise2D, type NoiseFunction2D } from 'simplex-noise'
+import { Point } from '../../../types/global'
 
 export class SimplexNoise {
 	private simplex: NoiseFunction2D
@@ -30,5 +31,11 @@ export class SimplexNoise {
 	}
 	getNoise(x: number, y: number): number {
 		return this.simplex(x * this.scale, y * this.scale)
+	}
+	getPointNoise(x: number, y: number): Point {
+		return {
+			x: this.simplex(x * this.scale, x * this.scale),
+			y: this.simplex(y * this.scale, y * this.scale),
+		}
 	}
 }
