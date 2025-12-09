@@ -1,0 +1,154 @@
+{
+	"spritesheet": "wizard_spritesheet.png",
+	"frame_width": 64,
+	"frame_height": 64,
+	"total_rows": 120,
+	"total_columns": 24,
+	"directions": [
+		"front",
+		"front-right",
+		"right",
+		"back-right",
+		"back",
+		"back-left",
+		"left",
+		"front-left"
+	],
+	"animations": [
+		{
+			"name": "Walk",
+			"start_row": 0,
+			"end_row": 7,
+			"num_frames": 10,
+			"frame_start": 1,
+			"frame_end": 38,
+			"frame_step": 4
+		},
+		{
+			"name": "Staff_Attack",
+			"start_row": 8,
+			"end_row": 15,
+			"num_frames": 6,
+			"frame_start": 1,
+			"frame_end": 23,
+			"frame_step": 4
+		},
+		{
+			"name": "Spell2",
+			"start_row": 16,
+			"end_row": 23,
+			"num_frames": 11,
+			"frame_start": 1,
+			"frame_end": 44,
+			"frame_step": 4
+		},
+		{
+			"name": "Spell1",
+			"start_row": 24,
+			"end_row": 31,
+			"num_frames": 10,
+			"frame_start": 1,
+			"frame_end": 37,
+			"frame_step": 4
+		},
+		{
+			"name": "Run_Weapon",
+			"start_row": 32,
+			"end_row": 39,
+			"num_frames": 7,
+			"frame_start": 1,
+			"frame_end": 27,
+			"frame_step": 4
+		},
+		{
+			"name": "Run",
+			"start_row": 40,
+			"end_row": 47,
+			"num_frames": 7,
+			"frame_start": 1,
+			"frame_end": 27,
+			"frame_step": 4
+		},
+		{
+			"name": "Roll",
+			"start_row": 48,
+			"end_row": 55,
+			"num_frames": 8,
+			"frame_start": 1,
+			"frame_end": 31,
+			"frame_step": 4
+		},
+		{
+			"name": "RecieveHit_2",
+			"start_row": 56,
+			"end_row": 63,
+			"num_frames": 5,
+			"frame_start": 1,
+			"frame_end": 19,
+			"frame_step": 4
+		},
+		{
+			"name": "RecieveHit",
+			"start_row": 64,
+			"end_row": 71,
+			"num_frames": 5,
+			"frame_start": 1,
+			"frame_end": 19,
+			"frame_step": 4
+		},
+		{
+			"name": "Punch",
+			"start_row": 72,
+			"end_row": 79,
+			"num_frames": 6,
+			"frame_start": 1,
+			"frame_end": 23,
+			"frame_step": 4
+		},
+		{
+			"name": "PickUp",
+			"start_row": 80,
+			"end_row": 87,
+			"num_frames": 10,
+			"frame_start": 1,
+			"frame_end": 38,
+			"frame_step": 4
+		},
+		{
+			"name": "Idle_Weapon",
+			"start_row": 88,
+			"end_row": 95,
+			"num_frames": 24,
+			"frame_start": 1,
+			"frame_end": 94,
+			"frame_step": 4
+		},
+		{
+			"name": "Idle_Attacking",
+			"start_row": 96,
+			"end_row": 103,
+			"num_frames": 13,
+			"frame_start": 1,
+			"frame_end": 51,
+			"frame_step": 4
+		},
+		{
+			"name": "Idle",
+			"start_row": 104,
+			"end_row": 111,
+			"num_frames": 24,
+			"frame_start": 1,
+			"frame_end": 94,
+			"frame_step": 4
+		},
+		{
+			"name": "Death",
+			"start_row": 112,
+			"end_row": 119,
+			"num_frames": 9,
+			"frame_start": 1,
+			"frame_end": 36,
+			"frame_step": 4
+		}
+	]
+}
