@@ -5,14 +5,14 @@
 	"total_rows": 120,
 	"total_columns": 24,
 	"directions": [
+		"left",
+		"front-left",
 		"front",
 		"front-right",
 		"right",
 		"back-right",
 		"back",
-		"back-left",
-		"left",
-		"front-left"
+		"back-left"
 	],
 	"animations": [
 		{
