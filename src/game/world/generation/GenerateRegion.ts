@@ -9,19 +9,32 @@ export class GenerateRegion {
 	private width: number
 	private height: number
 	private scale: number
+	private seed?: number | string
 	private edgeNodes: EdgeNode[] = []
 	private pathNodes: PathNode[] = []
 
-	constructor(width: number, height: number, scale: number = 0.01) {
+	constructor(
+		width: number,
+		height: number,
+		scale: number = 0.01,
+		seed?: number | string,
+	) {
 		this.width = width
 		this.height = height
 		this.scale = scale
-		// Don't initialize pathGenerator here - wait for seed in initialize()
-	}
-	initialize(seed: number) {
-		this.noiseGenerator = new SimplexNoise(this.scale, seed)
+		this.seed = seed
+		this.noiseGenerator = new SimplexNoise(scale, seed)
+		this.pathGenerator = new GeneratePaths(
+			this.width,
+			this.height,
+			this.scale,
+			0.5,
+			this.seed,
+		)
+		this.initialize()
 		// Create seeded path generator
-		this.pathGenerator = new GeneratePaths(this.width, this.height, 1, seed)
+	}
+	initialize() {
 		this.generateEdgeNodes()
 		this.generatePaths()
 		this.generateHeightMap()

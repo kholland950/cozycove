@@ -3,7 +3,7 @@ import { createNoise2D, type NoiseFunction2D } from 'simplex-noise'
 export class SimplexNoise {
 	private simplex: NoiseFunction2D
 	private scale: number
-	constructor(scale: number = 0.01, seed?: string | number) {
+	constructor(scale: number = 0.01, seed?: number | string) {
 		this.scale = scale
 		// If seed provided, use a small seeded RNG; otherwise use Math.random
 		const rng = seed != null ? SimplexNoise.createSeededRng(seed) : Math.random
@@ -11,7 +11,7 @@ export class SimplexNoise {
 	}
 	// Small, deterministic seeding: hash the seed string into an initial state
 	// and return a mulberry32-like generator function that produces [0,1).
-	private static createSeededRng(seed: string | number): () => number {
+	private static createSeededRng(seed?: string | number): () => number {
 		const s = String(seed)
 		// simple string -> 32-bit hash (FNV-1a variant)
 		let h = 2166136261 >>> 0

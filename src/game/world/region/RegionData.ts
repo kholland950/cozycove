@@ -30,7 +30,7 @@ export class RegionData {
 	public paths: PathNode[] = []
 
 	// Additional metadata
-	public seed: number
+	public seed?: number | string
 	public generated: boolean = false
 
 	constructor(
@@ -39,7 +39,7 @@ export class RegionData {
 		width: number = 512,
 		height: number = 512,
 		chunkSize: number = 128,
-		seed?: number,
+		seed?: number | string,
 	) {
 		this.worldX = worldX
 		this.worldY = worldY

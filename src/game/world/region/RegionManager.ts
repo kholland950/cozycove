@@ -3,15 +3,48 @@ import { RegionData } from './RegionData'
 
 export class RegionManager {
 	private regions: RegionData[] = []
-	generateRegionAt(worldX: number, worldY: number, seed?: number): RegionData {
-		const region = new RegionData(worldX, worldY, 512, 512, 128, seed)
-		const generator = new GenerateRegion(region.width, region.height)
-		generator.initialize(region.seed)
+	private width: number
+	private height: number
+	private chunkSize: number
+	private scale: number
+	private seed?: number | string
+
+	constructor(
+		width: number,
+		height: number,
+		chunkSize: number,
+		scale: number,
+		seed?: number | string,
+	) {
+		this.width = width
+		this.height = height
+		this.chunkSize = chunkSize
+		this.scale = scale
+		this.seed = seed || Math.random()
+	}
+
+	generateRegionAt(worldX: number, worldY: number): RegionData {
+		const region = new RegionData(
+			worldX,
+			worldY,
+			this.width,
+			this.height,
+			this.chunkSize,
+			this.seed,
+		)
+		const generator = new GenerateRegion(
+			region.width,
+			region.height,
+			this.scale,
+			this.seed,
+		)
+		generator.initialize()
 		region.paths = generator.getPathNodes()
 		console.log('Region paths count:', region.paths.length)
 		this.regions.push(region)
 		return region
 	}
+
 	getRegionAt(worldX: number, worldY: number): RegionData | null {
 		for (const region of this.regions) {
 			if (region.worldX === worldX && region.worldY === worldY) {
@@ -20,6 +53,7 @@ export class RegionManager {
 		}
 		return null
 	}
+
 	createRegionTexture(
 		region: RegionData,
 		scene: Phaser.Scene,

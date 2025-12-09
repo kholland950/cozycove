@@ -8,13 +8,25 @@ export class Game extends Scene {
 	player!: Phaser.GameObjects.Sprite
 	keys!: { [key: string]: Phaser.Input.Keyboard.Key }
 
-	regionManager: RegionManager = new RegionManager()
+	seed?: number | string = Math.random() * 1000
+	regionWidth: number = 512
+	regionHeight: number = 512
+	chunkSize: number = 16
+	regionScale: number = 0.03
+
+	regionManager: RegionManager
 
 	playerComponent: Player = new Player(this)
 
 	constructor() {
 		super('Game')
-		this.regionManager.generateRegionAt(0, 0)
+		this.regionManager = new RegionManager(
+			this.regionWidth,
+			this.regionHeight,
+			this.chunkSize,
+			this.regionScale,
+			this.seed,
+		)
 	}
 
 	preload() {
@@ -26,7 +38,7 @@ export class Game extends Scene {
 		this.camera.setBackgroundColor(0x000000)
 		this.camera.setZoom(0.5)
 		// create region now (safe during scene lifecycle)
-		this.regionManager.generateRegionAt(0, 0, 12345)
+		this.regionManager.generateRegionAt(0, 0)
 
 		// instantiate player with the correct scene reference
 		this.playerComponent = new Player(this)
@@ -37,7 +49,7 @@ export class Game extends Scene {
 			const regionTexture = this.regionManager.createRegionTexture(region, this)
 			const img = this.add.image(0, 0, regionTexture.key).setOrigin(0, 0)
 
-			img.setScale(16)
+			img.setScale(4)
 			img.setDepth(-1)
 		}
 		this.camera.useBounds = false
