@@ -1,17 +1,6 @@
 import type { Game } from '../scenes/Game'
 import spritesheetJSON from '../sprite-configs/wizard_spritesheet.json'
 
-// const directions = [
-// 	'front',
-// 	'front-right',
-// 	'right',
-// 	'back-right',
-// 	'back',
-// 	'back-left',
-// 	'left',
-// 	'front-left',
-// ]
-
 const directionMap: { [key: string]: string } = {
 	west: 'left',
 	'south-west': 'front-left',

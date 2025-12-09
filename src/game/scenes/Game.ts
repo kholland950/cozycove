@@ -49,9 +49,21 @@ export class Game extends Scene {
 
 		const mapWidth = map.widthInPixels
 		const mapHeight = map.heightInPixels
+		this.camera.setZoom(2)
 		this.camera.setBounds(0, 0, mapWidth, mapHeight)
 
 		this.playerComponent.create(mapWidth / 2, mapHeight / 2)
+
+		this.scale.on(
+			'resize',
+			(gameSize: Phaser.Structs.Size) => {
+				var width = gameSize.width
+				var height = gameSize.height
+
+				this.cameras.resize(width, height)
+			},
+			this,
+		)
 
 		// this.input.once('pointerdown', () => {
 		//   this.scene.start('GameOver')
