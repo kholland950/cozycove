@@ -32,6 +32,11 @@ export class SimplexNoise {
 	getNoise(x: number, y: number): number {
 		return this.simplex(x * this.scale, y * this.scale)
 	}
+	getPathNoise(x: number, y: number): number {
+		// Amplify noise for path generation
+		let amp = 1
+		return this.simplex((x * this.scale) / amp, (y * this.scale) / amp)
+	}
 	getPointNoise(x: number, y: number): Point {
 		return {
 			x: this.simplex(x * this.scale, x * this.scale),

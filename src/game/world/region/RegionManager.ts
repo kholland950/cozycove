@@ -1,5 +1,6 @@
 import { GenerateRegion } from '../generation/GenerateRegion'
 import { RegionData } from './RegionData'
+import { Point } from '../../types/global'
 
 export class RegionManager {
 	private regions: RegionData[] = []
@@ -43,6 +44,23 @@ export class RegionManager {
 		this.regions.push(region)
 		return region
 	}
+	getCurrentRegion(): RegionData | null {
+		if (this.regions.length === 0) return null
+		return this.regions[0]
+	}
+	getInitialSpawnPoint(): Point {
+		const region = this.getCurrentRegion()
+		if (!region) return { x: 0, y: 0 }
+
+		const allPathNodes = region.paths.flat()
+		if (allPathNodes.length === 0) return { x: 0, y: 0 }
+		const randomIndex = Math.floor(Math.random() * allPathNodes.length)
+		const spawnPos = {
+			x: allPathNodes[randomIndex].x,
+			y: allPathNodes[randomIndex].y,
+		}
+		return spawnPos
+	}
 
 	getRegionAt(worldX: number, worldY: number): RegionData | null {
 		for (const region of this.regions) {
@@ -77,7 +95,7 @@ export class RegionManager {
 		// Get the 2D canvas context and draw a simple representation:
 		const ctx = canvasTexture.getContext()
 		// Background (example color — change as needed)
-		ctx.fillStyle = '#6aa84f'
+		ctx.fillStyle = '#5d811bff'
 		ctx.fillRect(0, 0, width, height)
 
 		// If the region has a heightMap, draw a simple grayscale visualization
@@ -99,8 +117,8 @@ export class RegionManager {
 
 		if (Array.isArray(paths) && paths.length > 0) {
 			console.log('Drawing', paths.length, 'paths')
-			ctx.strokeStyle = '#8B4513'
-			ctx.lineWidth = 4
+			ctx.strokeStyle = '#a3cf3bff'
+			ctx.lineWidth = 16
 			ctx.lineCap = 'round'
 			ctx.lineJoin = 'round'
 

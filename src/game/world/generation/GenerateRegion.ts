@@ -27,8 +27,8 @@ export class GenerateRegion {
 		this.pathGenerator = new GeneratePaths(
 			this.width,
 			this.height,
-			this.scale,
-			0.5,
+			this.scale, // Lower scale for more variation
+			20, // Higher influence for more winding
 			this.seed,
 		)
 		this.initialize()
@@ -110,39 +110,28 @@ export class GenerateRegion {
 			]
 			return
 		}
-		let usedIndices: Set<number> = new Set()
-		let t = 1
 
-		while (usedIndices.size < totalNodes) {
-			let startIndex: number | undefined
-			while (startIndex === undefined || usedIndices.has(startIndex)) {
-				startIndex = Math.abs(
-					Math.floor(this.noiseGenerator.getNoise(t, t) * totalNodes),
+		// Create pairs of opposite sides first (West-East, North-South)
+		const opposites = [
+			{ start: 0, end: 1 }, // West to East
+			{ start: 2, end: 3 }, // North to South
+		]
+
+		// Generate paths between opposite edges
+		for (const pair of opposites) {
+			if (pair.start < totalNodes && pair.end < totalNodes) {
+				this.paths.push(
+					this.pathGenerator.generatePath(
+						{
+							x: this.edgeNodes[pair.start].x,
+							y: this.edgeNodes[pair.start].y,
+						},
+						{ x: this.edgeNodes[pair.end].x, y: this.edgeNodes[pair.end].y },
+					),
 				)
-				t += 100
 			}
-			if (startIndex < 0) startIndex = 0
-			if (startIndex > totalNodes - 1) startIndex = totalNodes - 1
-
-			usedIndices.add(startIndex)
-			let endIndex: number | undefined
-			while (endIndex === undefined || usedIndices.has(endIndex)) {
-				endIndex = Math.abs(
-					Math.floor(this.noiseGenerator.getNoise(t, t) * totalNodes),
-				)
-				t += 100
-			}
-			if (endIndex < 0) endIndex = 0
-			if (endIndex > totalNodes - 1) endIndex = totalNodes - 1
-
-			usedIndices.add(endIndex)
-			this.paths.push(
-				this.pathGenerator.generatePath(
-					{ x: this.edgeNodes[startIndex].x, y: this.edgeNodes[startIndex].y },
-					{ x: this.edgeNodes[endIndex].x, y: this.edgeNodes[endIndex].y },
-				),
-			)
 		}
+
 		console.log('Generated path nodes:', this.paths)
 	}
 }

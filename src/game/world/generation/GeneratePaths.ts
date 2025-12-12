@@ -11,8 +11,8 @@ export class GeneratePaths {
 	constructor(
 		width: number,
 		height: number,
-		scale: number = 0.05,
-		noiseInfluence: number = 5,
+		scale: number = 0.02,
+		noiseInfluence: number = 20,
 		seed?: number | string,
 	) {
 		this.width = width
@@ -31,17 +31,17 @@ export class GeneratePaths {
 	generatePath(start: Point, end: Point): PathNode[] {
 		// Clamp and round coordinates to valid bounds
 		console.log('Generating path from', start, 'to', end)
-		const sx = Math.max(0, Math.min(this.width - 1, Math.round(start.x)))
-		const sy = Math.max(0, Math.min(this.height - 1, Math.round(start.y)))
-		const ex = Math.max(0, Math.min(this.width - 1, Math.round(end.x)))
-		const ey = Math.max(0, Math.min(this.height - 1, Math.round(end.y)))
+		const startX = Math.max(0, Math.min(this.width - 1, Math.round(start.x)))
+		const startY = Math.max(0, Math.min(this.height - 1, Math.round(start.y)))
+		const endX = Math.max(0, Math.min(this.width - 1, Math.round(end.x)))
+		const endY = Math.max(0, Math.min(this.height - 1, Math.round(end.y)))
 
 		// If start equals end, return single node
-		if (sx === ex && sy === ey) {
+		if (startX === endX && startY === endY) {
 			return [
 				{
-					x: sx,
-					y: sy,
+					x: startX,
+					y: startY,
 					g: 0,
 					h: 0,
 					f: 0,
@@ -55,16 +55,16 @@ export class GeneratePaths {
 		const nodeMap = new Map<string, PathNode>()
 
 		const startNode: PathNode = {
-			x: sx,
-			y: sy,
+			x: startX,
+			y: startY,
 			g: 0,
-			h: this.heuristic({ x: sx, y: sy }, { x: ex, y: ey }),
+			h: this.heuristic({ x: startX, y: startY }, { x: endX, y: endY }),
 			f: 0,
 			parent: null,
 		}
 		startNode.f = startNode.g + startNode.h
 		openSet.push(startNode)
-		nodeMap.set(`${sx},${sy}`, startNode)
+		nodeMap.set(`${startX},${startY}`, startNode)
 
 		// Iteration limit to prevent infinite loops
 		const maxIterations = this.width * this.height
@@ -75,16 +75,17 @@ export class GeneratePaths {
 
 			// Get node with lowest f score
 			let currentIndex = 0
-			for (let i = 1; i < openSet.length; i++) {
-				if (openSet[i].f < openSet[currentIndex].f) {
-					currentIndex = i
+			for (let index = 1; index < openSet.length; index++) {
+				if (openSet[index].f < openSet[currentIndex].f) {
+					currentIndex = index
 				}
 			}
 			const current = openSet[currentIndex]
 
 			// Check if we reached the end
-			if (current.x === ex && current.y === ey) {
-				return this.reconstructPath(current)
+			if (current.x === endX && current.y === endY) {
+				const rawPath = this.reconstructPath(current)
+				return this.smoothPath(rawPath)
 			}
 
 			// Move current from open to closed
@@ -110,7 +111,7 @@ export class GeneratePaths {
 						x: neighbor.x,
 						y: neighbor.y,
 						g: tentativeG,
-						h: this.heuristic(neighbor, { x: ex, y: ey }),
+						h: this.heuristic(neighbor, { x: endX, y: endY }),
 						f: 0,
 						parent: current,
 					}
@@ -128,10 +129,95 @@ export class GeneratePaths {
 
 		// Fallback: A* didn't complete (shouldn't happen on open grid)
 		// Return straight line path as guaranteed fallback
-		return this.createStraightPath({ x: sx, y: sy }, { x: ex, y: ey })
+		const fallbackPath = this.createStraightPath(
+			{ x: startX, y: startY },
+			{ x: endX, y: endY },
+		)
+		return this.smoothPath(fallbackPath)
 	}
 
 	/**
+	 * Smooths a path by averaging groups of N consecutive points.
+	 * Creates a simplified, smoother path with fewer points.
+	 * @param path Original path nodes
+	 * @param groupSize Number of points to average together (default 3)
+	 * @returns Smoothed path with averaged points
+	 */
+	private smoothPath(path: PathNode[], groupSize: number = 64): PathNode[] {
+		if (path.length < groupSize) return path
+
+		const smoothed: PathNode[] = []
+		let parent: PathNode | null = null
+
+		// Always keep the first point
+		const firstNode: PathNode = {
+			x: path[0].x,
+			y: path[0].y,
+			g: 0,
+			h: 0,
+			f: 0,
+			parent: null,
+		}
+		smoothed.push(firstNode)
+		parent = firstNode
+
+		// Process points in groups of N, averaging them
+		for (let index = 1; index < path.length - 1; index += groupSize) {
+			let sumX = 0
+			let sumY = 0
+			let count = 0
+
+			// Calculate average of up to groupSize points
+			for (
+				let offset = 0;
+				offset < groupSize && index + offset < path.length - 1;
+				offset++
+			) {
+				const point = path[index + offset]
+				sumX += point.x
+				sumY += point.y
+				count++
+			}
+
+			// Calculate average position
+			const avgX = Math.round(sumX / count)
+			const avgY = Math.round(sumY / count)
+
+			// Skip if it's the same as the last point
+			if (parent && avgX === parent.x && avgY === parent.y) continue
+
+			// Clamp to bounds
+			if (avgX < 0 || avgX >= this.width || avgY < 0 || avgY >= this.height)
+				continue
+
+			const node: PathNode = {
+				x: avgX,
+				y: avgY,
+				g: parent ? parent.g + 1 : 0,
+				h: 0,
+				f: 0,
+				parent,
+			}
+			smoothed.push(node)
+			parent = node
+		}
+
+		// Always keep the last point
+		const lastPoint = path[path.length - 1]
+		if (!parent || lastPoint.x !== parent.x || lastPoint.y !== parent.y) {
+			const lastNode: PathNode = {
+				x: lastPoint.x,
+				y: lastPoint.y,
+				g: parent ? parent.g + 1 : 0,
+				h: 0,
+				f: 0,
+				parent,
+			}
+			smoothed.push(lastNode)
+		}
+
+		return smoothed.length >= 2 ? smoothed : path
+	} /**
 	 * Creates a straight-line path from start to end using Bresenham's line algorithm.
 	 * Guaranteed to return a valid path.
 	 */
@@ -139,21 +225,21 @@ export class GeneratePaths {
 		const path: PathNode[] = []
 		let parent: PathNode | null = null
 
-		const dx = Math.abs(end.x - start.x)
-		const dy = Math.abs(end.y - start.y)
-		const sx = start.x < end.x ? 1 : -1
-		const sy = start.y < end.y ? 1 : -1
-		let err = dx - dy
+		const deltaX = Math.abs(end.x - start.x)
+		const deltaY = Math.abs(end.y - start.y)
+		const stepX = start.x < end.x ? 1 : -1
+		const stepY = start.y < end.y ? 1 : -1
+		let error = deltaX - deltaY
 
-		let x = start.x
-		let y = start.y
+		let currentX = start.x
+		let currentY = start.y
 
 		while (true) {
 			const node: PathNode = {
-				x,
-				y,
-				g: parent ? parent.g + this.getMoveCost(x, y) : 0,
-				h: this.heuristic({ x, y }, end),
+				x: currentX,
+				y: currentY,
+				g: parent ? parent.g + this.getMoveCost(currentX, currentY) : 0,
+				h: this.heuristic({ x: currentX, y: currentY }, end),
 				f: 0,
 				parent,
 			}
@@ -161,16 +247,16 @@ export class GeneratePaths {
 			path.push(node)
 			parent = node
 
-			if (x === end.x && y === end.y) break
+			if (currentX === end.x && currentY === end.y) break
 
-			const e2 = 2 * err
-			if (e2 > -dy) {
-				err -= dy
-				x += sx
+			const error2 = 2 * error
+			if (error2 > -deltaY) {
+				error -= deltaY
+				currentX += stepX
 			}
-			if (e2 < dx) {
-				err += dx
-				y += sy
+			if (error2 < deltaX) {
+				error += deltaX
+				currentY += stepY
 			}
 		}
 
@@ -182,7 +268,7 @@ export class GeneratePaths {
 	 */
 	private getMoveCost(x: number, y: number): number {
 		const baseCost = 1
-		const noiseValue = this.noiseGenerator.getNoise(x, y)
+		const noiseValue = this.noiseGenerator.getPathNoise(x, y)
 		// Normalize noise from [-1, 1] to positive cost
 		// Lower noise = lower cost = preferred path
 		const noiseCost = (noiseValue + 1) * 0.5 * this.noiseInfluence
@@ -190,22 +276,29 @@ export class GeneratePaths {
 	}
 
 	/**
-	 * Heuristic function for A* (Manhattan distance)
+	 * Heuristic function for A* (Euclidean distance with reduced weight for more exploration)
 	 */
-	private heuristic(a: Point, b: Point): number {
-		return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
+	private heuristic(pointA: Point, pointB: Point): number {
+		const deltaX = pointA.x - pointB.x
+		const deltaY = pointA.y - pointB.y
+		// Use Euclidean and reduce weight to 0.8 for more winding paths
+		return Math.sqrt(deltaX * deltaX + deltaY * deltaY) * 0.8
 	}
 
 	/**
-	 * Gets valid neighboring tiles (4-directional)
+	 * Gets valid neighboring tiles (8-directional for smoother paths)
 	 */
 	private getNeighbors(node: Point): Point[] {
 		const neighbors: Point[] = []
 		const directions = [
 			{ x: 0, y: -1 }, // North
+			{ x: 1, y: -1 }, // Northeast
 			{ x: 1, y: 0 }, // East
+			{ x: 1, y: 1 }, // Southeast
 			{ x: 0, y: 1 }, // South
+			{ x: -1, y: 1 }, // Southwest
 			{ x: -1, y: 0 }, // West
+			{ x: -1, y: -1 }, // Northwest
 		]
 
 		for (const dir of directions) {
